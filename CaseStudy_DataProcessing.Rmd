@@ -1,0 +1,99 @@
+---
+title: 'Bellabeat Case Study: Processing the Data'
+author: "Andrew Greenwood"
+date: "2023-10-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Install and load the necessary packages
+Processing the data begins with installing the packages I will need.
+
+```{r}
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("here")
+library(here)
+install.packages("skimr")
+library(skimr)
+install.packages("janitor")
+library(janitor)
+install.packages("lubridate")
+library(lubridate)
+```
+
+## Create and inspect the 'Daily_Activity' data frame
+From a .csv file, create and inspect the data frame as 'Daily_Activity'.
+
+```{r}
+Daily_Activity <- read_csv("Dataset 1/dailyActivity_merged.csv")
+head(Daily_Activity)
+```
+
+## Transform data type
+Change the data type of activity from 'chr' to 'date'.
+
+```{r}
+Daily_Activity$ActivityDate <- mdy(Daily_Activity$ActivityDate)
+```
+
+## Remove unnecessary columns
+Remove unnecessary columns from 'Daily_Activity'. Inspect for accuracy.
+
+```{r}
+Daily_Activity_Temp <- subset(Daily_Activity, select = -c(TrackerDistance, LoggedActivitiesDistance))
+head(Daily_Activity_Temp)
+```
+
+## Rename columns
+Rename columns for consistency.
+
+```{r}
+Daily_Activity_New <- Daily_Activity_Temp %>% rename("FairlyActiveDistance"="ModeratelyActiveDistance",
+         "LightlyActiveDistance"="LightActiveDistance",
+         "SedentaryDistance"="SedentaryActiveDistance")
+```
+
+## Create and inspect the hourly data frames
+From a .csv file, create and inspect three data frames with hourly data that will be joined into a new data frame.
+
+```{r}
+Hourly_Calories <- read_csv("Dataset 1/hourlyCalories_merged.csv")
+head(Hourly_Calories)
+
+Hourly_Intensities <- read_csv("Dataset 1/hourlyIntensities_merged.csv")
+head(Hourly_Intensities)
+
+Hourly_Steps <- read_csv("Dataset 1/hourlySteps_merged.csv")
+head(Hourly_Steps)
+```
+
+## Join the data frames
+Join 'Hourly_Calories' and 'Hourly_Intensities' into 1 data frame, then join that data frame with 'Hourly_Steps'. Inspect the new data frame, 'Hourly_Activity_Clean'.
+
+```{r}
+Hourly_Activity_Temp <- Hourly_Calories %>% 
+  inner_join(Hourly_Intensities,
+             by=c('Id'='Id',
+                  'ActivityHour'='ActivityHour'))
+Hourly_Activity_Clean <- Hourly_Activity_Temp %>% 
+  inner_join(Hourly_Steps,
+             by=c('Id'='Id',
+                  'ActivityHour'='ActivityHour'))
+head(Hourly_Activity_Clean)
+```
+
+## Final data cleaning
+Finally, separate the 'ActivityHour' column into two columns for analysis of patterns according to time of day. Transform the data type of the 'ActivityDate' column to 'date'. Inspect the results one more time.
+
+```{r}
+Hourly_Activity_New <- separate(Hourly_Activity_Clean, ActivityHour, into=c("ActivityDate", "ActivityTime"), sep=" ")
+Hourly_Activity_New$ActivityDate <- mdy(Hourly_Activity_New$ActivityDate)
+head(Hourly_Activity_New)
+```
